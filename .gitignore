@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# WASM build artifacts (intermediate files)
+wasm/build/
+wasm/libs/
+wasm/emsdk/
+
+# Note: dist/ is NOT ignored - it contains the built package including sip.wasm

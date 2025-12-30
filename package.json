@@ -1,0 +1,55 @@
+{
+  "name": "@standardagents/sip",
+  "version": "0.1.0",
+  "description": "Small Image Processor - Ultra memory-efficient image processing for Cloudflare Workers",
+  "private": false,
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/standardagents/standardagents.git",
+    "directory": "packages/sip"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "workerd": "./dist/index.js",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./dist/sip.wasm": "./dist/sip.wasm"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -f dist/index.js dist/index.d.ts dist/index.js.map",
+    "build": "pnpm build:wasm && pnpm clean && tsup",
+    "build:wasm": "bash wasm/build.sh",
+    "build:code": "pnpm clean && tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:workers": "vitest run --config vitest.config.workers.ts"
+  },
+  "dependencies": {
+    "@jsquash/avif": "^2.1.1",
+    "@jsquash/webp": "^1.5.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.10.14",
+    "@cloudflare/workers-types": "^4.0.0",
+    "@types/node": "^22.16.5",
+    "tsup": "^8.0.0",
+    "typescript": "~5.8.0",
+    "vitest": "^2.1.9"
+  }
+}

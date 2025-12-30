@@ -1,0 +1,5 @@
+{
+  "name": "sip-test",
+  "compatibility_date": "2024-12-01",
+  "main": "tests/worker-entry.ts"
+}
