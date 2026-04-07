@@ -10,7 +10,7 @@ DIST_DIR="$SCRIPT_DIR/../dist"
 LIBS_DIR="$SCRIPT_DIR/libs"
 
 # Library versions
-LIBJPEG_VERSION="3.0.1"
+LIBJPEG_VERSION="3.1.4.1"
 LIBJPEG_URL="https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/${LIBJPEG_VERSION}.tar.gz"
 
 LIBSPNG_VERSION="0.7.4"
@@ -71,7 +71,7 @@ if [ ! -d "$LIBSPNG_DIR" ]; then
 fi
 
 # Build libjpeg-turbo for WASM
-LIBJPEG_BUILD="$BUILD_DIR/libjpeg-turbo"
+LIBJPEG_BUILD="$BUILD_DIR/libjpeg-turbo-${LIBJPEG_VERSION}"
 if [ ! -f "$LIBJPEG_BUILD/libjpeg.a" ]; then
     echo "Building libjpeg-turbo for WASM..."
     mkdir -p "$LIBJPEG_BUILD"
@@ -127,7 +127,7 @@ emcc \
     -s FILESYSTEM=0 \
     -s ASSERTIONS=0 \
     -DSPNG_USE_MINIZ \
-    -I"$LIBJPEG_DIR" \
+    -I"$LIBJPEG_DIR"/src \
     -I"$LIBJPEG_BUILD" \
     -I"$LIBSPNG_DIR"/spng \
     -I"$MINIZ_DIR" \

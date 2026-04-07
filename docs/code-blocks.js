@@ -2,7 +2,7 @@ export const codeBlocks = {
   pipeline: {
     lang: 'text',
     code: `
-request.body -> inspect() -> decode -> resize -> encodeJpeg -> Response
+request.body -> inspect() -> transform -> Response
 `,
   },
 
@@ -132,12 +132,12 @@ const stream = toReadableStream(image) // ReadableStream<Uint8Array>
 `,
   },
 
-  // --- Examples ---
+  // --- Example ---
 
-  exampleWorker: {
+  fullExample: {
     lang: 'typescript',
     code: `
-import { ready, toResponse, transform } from '@standardagents/sip'
+import { collect, inspect, ready, toResponse, transform } from '@standardagents/sip'
 import createSipModule from '@standardagents/sip/dist/sip.js'
 import sipWasm from '@standardagents/sip/dist/sip.wasm'
 
@@ -153,84 +153,50 @@ globalThis.__SIP_WASM_LOADER__ = async () =>
 
 let boot: Promise<void> | undefined
 
+const HTML = \`<!doctype html>
+<html><head><meta charset="utf-8"><title>sip demo</title>
+<style>
+  body { font-family: system-ui; max-width: 600px; margin: 2rem auto; }
+  img { max-width: 100%; margin-top: 1rem; }
+  input, button { margin-top: 1rem; }
+</style></head><body>
+<h1>sip image resizer</h1>
+<form method="post" enctype="multipart/form-data">
+  <input type="file" name="image" accept="image/*" required>
+  <button type="submit">Resize</button>
+</form>
+</body></html>\`
+
 export default {
   async fetch(request: Request) {
     boot ??= ready()
     await boot
 
-    const image = transform(request, {
-      width: 1600,
-      height: 1600,
-      quality: 82,
-    })
-
-    return toResponse(image)
-  },
-}
-`,
-  },
-  exampleValidate: {
-    lang: 'typescript',
-    code: `
-import { inspect, toResponse, transform } from '@standardagents/sip'
-
-const { info, source } = await inspect(request)
-
-if (info.width > 12_000 || info.height > 12_000) {
-  return Response.json({ error: 'Image too large' }, { status: 413 })
-}
-
-return toResponse(transform(source, { width: 2048, height: 2048 }))
-`,
-  },
-  exampleManual: {
-    lang: 'typescript',
-    code: `
-import { collect, decode, encodeJpeg, resize } from '@standardagents/sip'
-
-const pixels = decode(request)
-const resized = resize(pixels, { width: 960, height: 960 })
-const jpeg = encodeJpeg(resized, { quality: 78 })
-const { data, info, stats } = await collect(jpeg)
-
-await env.BUCKET.put('image.jpg', data, {
-  httpMetadata: { contentType: info.mimeType },
-})
-`,
-  },
-
-  // --- Other sections ---
-
-  loader: {
-    lang: 'typescript',
-    code: `
-import { ready } from '@standardagents/sip'
-import createSipModule from '@standardagents/sip/dist/sip.js'
-import sipWasm from '@standardagents/sip/dist/sip.wasm'
-
-globalThis.__SIP_WASM_LOADER__ = async () =>
-  createSipModule({
-    instantiateWasm(imports, receiveInstance) {
-      WebAssembly.instantiate(sipWasm, imports).then((instance) => {
-        receiveInstance(instance)
+    if (request.method === 'GET') {
+      return new Response(HTML, {
+        headers: { 'Content-Type': 'text/html' },
       })
-      return {}
-    },
-  })
+    }
 
-await ready()
-`,
+    const form = await request.formData()
+    const file = form.get('image')
+    if (!file || !(file instanceof File)) {
+      return new Response('No image uploaded', { status: 400 })
+    }
+
+    const { info } = await inspect(file)
+    const image = transform(file, { width: 1024, height: 1024, quality: 82 })
+    const result = await collect(image)
+
+    return new Response(result.data, {
+      headers: {
+        'Content-Type': 'image/jpeg',
+        'X-Original': \`\${info.format} \${info.width}x\${info.height}\`,
+        'X-Output': \`jpeg \${result.info.width}x\${result.info.height}\`,
+      },
+    })
   },
-  build: {
-    lang: 'shell',
-    code: `
-git clone https://github.com/emscripten-core/emsdk.git
-cd emsdk && ./emsdk install latest && ./emsdk activate latest
-source ./emsdk_env.sh
-
-pnpm build:wasm
-pnpm build:code
-pnpm test:unit
+}
 `,
   },
 }

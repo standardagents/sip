@@ -13,7 +13,8 @@ globalThis.__SIP_WASM_LOADER__ = async () => {
 };
 
 const { ready, transform, collect } = await import(pathToFileURL(join(root, 'dist', 'index.js')).href);
-const fixture = await readFile(join(root, 'tests', 'fixtures', 'large.jpg'));
+const fixtureName = process.argv[2] || 'large.jpg';
+const fixture = await readFile(join(root, 'tests', 'fixtures', fixtureName));
 const bytes = new Uint8Array(fixture.buffer.slice(fixture.byteOffset, fixture.byteOffset + fixture.byteLength));
 
 function chunkStream(chunkSize = 64 * 1024) {
@@ -53,10 +54,10 @@ for (let run = 0; run < 4; run++) {
 }
 
 console.log(JSON.stringify({
+  fixture: fixtureName,
   baseline,
   peakDelta: {
     arrayBuffers: maxArrayBuffers - baseline.arrayBuffers,
     rss: maxRss - baseline.rss,
   },
 }, null, 2));
-

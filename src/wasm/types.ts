@@ -27,6 +27,7 @@ export interface SipWasmModule {
   _sip_decoder_get_scanline(dec: number): number;
   _sip_decoder_finish(dec: number): number;
   _sip_decoder_get_buffered_input_size(dec: number): number;
+  _sip_decoder_get_working_size(dec: number): number;
   _sip_decoder_destroy(dec: number): void;
 
   // Encoder functions

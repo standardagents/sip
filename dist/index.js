@@ -896,7 +896,7 @@ var WasmJpegDecoder = class {
     return this.module._sip_decoder_get_buffered_input_size(this.decoder);
   }
   getRowBufferSize() {
-    return this.outputWidth * 3;
+    return this.module._sip_decoder_get_working_size(this.decoder);
   }
   dispose() {
     if (this.decoder) {
@@ -1225,6 +1225,157 @@ function makeEmptyStats() {
     notes: []
   };
 }
+function concatUint8Arrays(chunks) {
+  let total = 0;
+  for (const chunk of chunks) {
+    total += chunk.byteLength;
+  }
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return merged;
+}
+function readJpegOrientation(bytes) {
+  if (bytes.byteLength < 4 || bytes[0] !== 255 || bytes[1] !== 216) {
+    return null;
+  }
+  let offset = 2;
+  while (offset + 4 <= bytes.byteLength) {
+    if (bytes[offset] !== 255) {
+      offset++;
+      continue;
+    }
+    while (offset < bytes.byteLength && bytes[offset] === 255) {
+      offset++;
+    }
+    if (offset >= bytes.byteLength) {
+      break;
+    }
+    const marker = bytes[offset++];
+    if (marker === 216 || marker === 1 || marker >= 208 && marker <= 215) {
+      continue;
+    }
+    if (marker === 217 || marker === 218) {
+      break;
+    }
+    if (offset + 2 > bytes.byteLength) {
+      break;
+    }
+    const segmentLength = bytes[offset] << 8 | bytes[offset + 1];
+    if (segmentLength < 2 || offset + segmentLength > bytes.byteLength) {
+      break;
+    }
+    const segmentStart = offset + 2;
+    const payloadLength = segmentLength - 2;
+    if (marker === 225 && payloadLength >= 14 && bytes[segmentStart] === 69 && bytes[segmentStart + 1] === 120 && bytes[segmentStart + 2] === 105 && bytes[segmentStart + 3] === 102 && bytes[segmentStart + 4] === 0 && bytes[segmentStart + 5] === 0) {
+      const tiff = segmentStart + 6;
+      if (tiff + 8 > bytes.byteLength) {
+        return null;
+      }
+      const littleEndian = bytes[tiff] === 73 && bytes[tiff + 1] === 73;
+      const bigEndian = bytes[tiff] === 77 && bytes[tiff + 1] === 77;
+      if (!littleEndian && !bigEndian) {
+        return null;
+      }
+      const read16 = (index) => littleEndian ? bytes[index] | bytes[index + 1] << 8 : bytes[index] << 8 | bytes[index + 1];
+      const read32 = (index) => littleEndian ? (bytes[index] | bytes[index + 1] << 8 | bytes[index + 2] << 16 | bytes[index + 3] << 24) >>> 0 : (bytes[index] << 24 | bytes[index + 1] << 16 | bytes[index + 2] << 8 | bytes[index + 3]) >>> 0;
+      const ifdOffset = read32(tiff + 4);
+      const ifdStart = tiff + ifdOffset;
+      if (ifdStart + 2 > bytes.byteLength) {
+        return null;
+      }
+      const entryCount = read16(ifdStart);
+      for (let i = 0; i < entryCount; i++) {
+        const entry = ifdStart + 2 + i * 12;
+        if (entry + 12 > bytes.byteLength) {
+          return null;
+        }
+        const tag = read16(entry);
+        if (tag !== 274) {
+          continue;
+        }
+        const type = read16(entry + 2);
+        const count = read32(entry + 4);
+        if (type !== 3 || count !== 1) {
+          return null;
+        }
+        const valueOffset = entry + 8;
+        return littleEndian ? bytes[valueOffset] | bytes[valueOffset + 1] << 8 : bytes[valueOffset] << 8 | bytes[valueOffset + 1];
+      }
+    }
+    offset += segmentLength;
+  }
+  return null;
+}
+function buildExifOrientationSegment(orientation) {
+  if (!Number.isInteger(orientation) || orientation < 2 || orientation > 8) {
+    return null;
+  }
+  const payload = new Uint8Array([
+    69,
+    120,
+    105,
+    102,
+    0,
+    0,
+    73,
+    73,
+    42,
+    0,
+    8,
+    0,
+    0,
+    0,
+    1,
+    0,
+    18,
+    1,
+    3,
+    0,
+    1,
+    0,
+    0,
+    0,
+    orientation & 255,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ]);
+  const length = payload.byteLength + 2;
+  const segment = new Uint8Array(payload.byteLength + 4);
+  segment[0] = 255;
+  segment[1] = 225;
+  segment[2] = length >> 8 & 255;
+  segment[3] = length & 255;
+  segment.set(payload, 4);
+  return segment;
+}
+function injectJpegApp1Segment(chunk, segment) {
+  if (chunk.byteLength < 2 || chunk[0] !== 255 || chunk[1] !== 216) {
+    return concatUint8Arrays([chunk, segment]);
+  }
+  const merged = new Uint8Array(chunk.byteLength + segment.byteLength);
+  merged[0] = 255;
+  merged[1] = 216;
+  merged.set(segment, 2);
+  merged.set(chunk.subarray(2), 2 + segment.byteLength);
+  return merged;
+}
+async function readJpegOrientationFromSource(source) {
+  const direct = readJpegOrientation(source.headerBytes);
+  if (direct !== null) {
+    return direct;
+  }
+  const extended = await source.ensureHeaderBytes(262144);
+  return readJpegOrientation(extended);
+}
 var StatsTracker = class {
   stats = makeEmptyStats();
   constructor(note) {
@@ -1343,6 +1494,9 @@ async function* decodeSourceInternal(input) {
             break;
           }
           if (scanline === null) {
+            if (decoder2.finishStep() !== "ready") {
+              throw new Error("Unexpected end of JPEG input while finishing");
+            }
             return;
           }
           yield scanline;
@@ -1366,11 +1520,14 @@ async function* decodeSourceInternal(input) {
           throw new Error("Unexpected end of JPEG input");
         }
         if (scanline === null) {
-          decoder2.finishStep();
-          return;
+          break;
         }
         yield scanline;
       }
+      if (decoder2.finishStep() !== "ready") {
+        throw new Error("Unexpected end of JPEG input while finishing");
+      }
+      return;
     } finally {
       decoder2.dispose();
     }
@@ -1478,14 +1635,18 @@ function encodeJpeg(stream, options = {}) {
 }
 async function* runJpegTransform(source, info, options, infoDeferred, stats) {
   await loadWasm();
+  const orientation = await readJpegOrientationFromSource(source);
+  const orientationSegment = orientation ? buildExifOrientationSegment(orientation) : null;
   const target = normalizeBox(options, info.width, info.height);
   const decoder = new WasmJpegDecoder();
   const encoder = new WasmJpegEncoder();
   let resizeState = createResizeState(1, 1, target.width, target.height);
   let decodeWidth = info.width;
   let decodeHeight = info.height;
+  const scale = calculateOptimalScale(info.width, info.height, target.width, target.height);
   let headerReady = false;
   let started = false;
+  let emittedFirstChunk = false;
   const refresh = () => {
     const resizeBytes = (resizeState.bufferA?.byteLength ?? 0) + (resizeState.bufferB?.byteLength ?? 0);
     const codecBytes = decoder.getBufferedInputSize() + decoder.getRowBufferSize() + encoder.getBufferedOutputSize() + encoder.getRowBufferSize();
@@ -1493,6 +1654,9 @@ async function* runJpegTransform(source, info, options, infoDeferred, stats) {
     stats.update(decoder.getBufferedInputSize(), encoder.getBufferedOutputSize(), codecBytes, pipelineBytes);
   };
   try {
+    if (orientationSegment) {
+      stats.note(`jpeg-orientation=${orientation}`);
+    }
     for await (const { chunk, isFinal } of iterateInputChunks(source)) {
       stats.addBytesIn(chunk.byteLength);
       decoder.pushInput(chunk, isFinal);
@@ -1503,7 +1667,6 @@ async function* runJpegTransform(source, info, options, infoDeferred, stats) {
           continue;
         }
         headerReady = true;
-        const scale = calculateOptimalScale(info.width, info.height, target.width, target.height);
         const output = decoder.setScale(scale);
         decodeWidth = output.width;
         decodeHeight = output.height;
@@ -1517,6 +1680,7 @@ async function* runJpegTransform(source, info, options, infoDeferred, stats) {
           originalFormat: "jpeg"
         });
         stats.note(`jpeg-dct-scale=1/${scale}`);
+        stats.note(`jpeg-decoded=${decodeWidth}x${decodeHeight}`);
         refresh();
       }
       if (!started) {
@@ -1541,21 +1705,22 @@ async function* runJpegTransform(source, info, options, infoDeferred, stats) {
           encoder.writeScanline(outScanline);
           refresh();
           for (const jpegChunk of encoder.drainChunks()) {
-            stats.addBytesOut(jpegChunk.byteLength);
+            const nextChunk = !emittedFirstChunk && orientationSegment ? injectJpegApp1Segment(jpegChunk, orientationSegment) : jpegChunk;
+            emittedFirstChunk = true;
+            stats.addBytesOut(nextChunk.byteLength);
             refresh();
-            yield jpegChunk;
+            yield nextChunk;
           }
         }
       }
     }
-    stats.note(`jpeg-decoded=${decodeWidth}x${decodeHeight}`);
-    refresh();
     if (!headerReady) {
       if (decoder.readHeaderStep() !== "ready") {
         throw new Error("Incomplete JPEG header");
       }
-      const scale = calculateOptimalScale(info.width, info.height, target.width, target.height);
       const output = decoder.setScale(scale);
+      decodeWidth = output.width;
+      decodeHeight = output.height;
       resizeState = createResizeState(output.width, output.height, target.width, target.height);
       encoder.init(target.width, target.height, options.quality ?? DEFAULT_QUALITY);
       encoder.start();
@@ -1566,13 +1731,16 @@ async function* runJpegTransform(source, info, options, infoDeferred, stats) {
         originalFormat: "jpeg"
       });
       stats.note(`jpeg-dct-scale=1/${scale}`);
+      stats.note(`jpeg-decoded=${decodeWidth}x${decodeHeight}`);
       headerReady = true;
+      refresh();
     }
     if (!started) {
       if (decoder.startStep() !== "ready") {
         throw new Error("Unexpected end of JPEG input before decode start");
       }
       started = true;
+      refresh();
     }
     while (true) {
       const scanline = decoder.readScanlineStep();
@@ -1588,9 +1756,11 @@ async function* runJpegTransform(source, info, options, infoDeferred, stats) {
         encoder.writeScanline(outScanline);
         refresh();
         for (const jpegChunk of encoder.drainChunks()) {
-          stats.addBytesOut(jpegChunk.byteLength);
+          const nextChunk = !emittedFirstChunk && orientationSegment ? injectJpegApp1Segment(jpegChunk, orientationSegment) : jpegChunk;
+          emittedFirstChunk = true;
+          stats.addBytesOut(nextChunk.byteLength);
           refresh();
-          yield jpegChunk;
+          yield nextChunk;
         }
       }
     }
@@ -1601,15 +1771,19 @@ async function* runJpegTransform(source, info, options, infoDeferred, stats) {
       encoder.writeScanline(outScanline);
       refresh();
       for (const jpegChunk of encoder.drainChunks()) {
-        stats.addBytesOut(jpegChunk.byteLength);
+        const nextChunk = !emittedFirstChunk && orientationSegment ? injectJpegApp1Segment(jpegChunk, orientationSegment) : jpegChunk;
+        emittedFirstChunk = true;
+        stats.addBytesOut(nextChunk.byteLength);
         refresh();
-        yield jpegChunk;
+        yield nextChunk;
       }
     }
     for (const jpegChunk of encoder.finish()) {
-      stats.addBytesOut(jpegChunk.byteLength);
+      const nextChunk = !emittedFirstChunk && orientationSegment ? injectJpegApp1Segment(jpegChunk, orientationSegment) : jpegChunk;
+      emittedFirstChunk = true;
+      stats.addBytesOut(nextChunk.byteLength);
       refresh();
-      yield jpegChunk;
+      yield nextChunk;
     }
   } finally {
     decoder.dispose();

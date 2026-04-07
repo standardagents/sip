@@ -187,7 +187,7 @@ export class WasmJpegDecoder {
   }
 
   getRowBufferSize(): number {
-    return this.outputWidth * 3;
+    return this.module._sip_decoder_get_working_size(this.decoder);
   }
 
   dispose(): void {
