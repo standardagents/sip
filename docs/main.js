@@ -48,7 +48,7 @@ const pmLogos = {
 
 const stats = [
   { value: 'Raw stream', label: 'Use request bodies directly instead of buffering uploads in userland.' },
-  { value: 'Peak shown', label: 'The demo reports measured SIP memory, not guessed heap size.' },
+  { value: '128 MB safe', label: 'Designed for Cloudflare Workers memory limits.' },
   { value: '4 formats', label: 'JPEG, PNG, WebP, and AVIF inputs. Output is always JPEG.' },
 ]
 
@@ -236,10 +236,6 @@ const App = component(() => html`
 
     <div class="shell">
       <section class="hero">
-        <div class="hero__badge">
-          <span class="hero__badge-dot"></span>
-          <span>Measured peak memory, not heap-size guesswork</span>
-        </div>
         <img src="${sipLogoUrl}" alt="sip" class="hero__banner" />
         <h1 class="hero__title">
           <span class="hero__title-line">Small Image</span>
@@ -262,12 +258,6 @@ const App = component(() => html`
             <span>Star on GitHub</span>
             <span class="btn__count">${() => state.stars}</span>
           </a>
-        </div>
-        <div class="hero__pipeline">
-          <span class="hero__pipeline-step">request.body</span>
-          <span class="hero__pipeline-step hero__pipeline-step--active">inspect()</span>
-          <span class="hero__pipeline-step hero__pipeline-step--active">transform()</span>
-          <span class="hero__pipeline-step">toResponse()</span>
         </div>
       </section>
 
@@ -384,7 +374,6 @@ const App = component(() => html`
             <ul>
               <li><strong>Raw upload path</strong> — pass <code>request.body</code> or a full <code>Request</code> directly into the transform pipeline.</li>
               <li><strong>Reusable inspection</strong> — <code>inspect()</code> returns both metadata and a reusable source for the later decode step.</li>
-              <li><strong>Measured peak memory</strong> — the docs demo shows SIP's measured processing bytes rather than WASM heap capacity.</li>
               <li><strong>Explicit buffering</strong> — <code>collect()</code> still exists, but it is a deliberate opt-in instead of the default shape.</li>
             </ul>
           </section>
