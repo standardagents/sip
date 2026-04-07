@@ -2,6 +2,8 @@
 node_modules/
 docs-dist/
 docs/.wrangler/
+playwright-report/
+test-results/
 
 # WASM build artifacts (intermediate files)
 wasm/build/

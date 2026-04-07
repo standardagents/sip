@@ -280,6 +280,7 @@ const App = component(() => html`
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/avif"
+                  data-testid="demo-file-input"
                   @change="${handleDemoFileSelect}"
                 />
                 <div class="demo__input-preview">
@@ -289,12 +290,13 @@ const App = component(() => html`
                   <span>Select your own image</span>
                 </div>
               </label>
-              <div class="demo__statusbar">${() => state.demoInputInfo}</div>
+              <div class="demo__statusbar" data-testid="demo-input-info">${() => state.demoInputInfo}</div>
               <div class="demo__controls">
                 <div class="demo__field">
                   <label>Max width</label>
                   <input
                     type="number"
+                    data-testid="demo-width-input"
                     value="${() => state.demoMaxWidth}"
                     @input="${(e) => { state.demoMaxWidth = e.target.value }}"
                   />
@@ -303,6 +305,7 @@ const App = component(() => html`
                   <label>Max height</label>
                   <input
                     type="number"
+                    data-testid="demo-height-input"
                     value="${() => state.demoMaxHeight}"
                     @input="${(e) => { state.demoMaxHeight = e.target.value }}"
                   />
@@ -311,6 +314,7 @@ const App = component(() => html`
                   <label>Quality</label>
                   <input
                     type="number"
+                    data-testid="demo-quality-input"
                     value="${() => state.demoQuality}"
                     min="1"
                     max="100"
@@ -318,7 +322,7 @@ const App = component(() => html`
                   />
                 </div>
               </div>
-              <div class="demo__error">${() => state.demoError}</div>
+              <div class="demo__error" data-testid="demo-error">${() => state.demoError}</div>
               <div class="demo__output-preview">
                 <div class="demo__spinner" style="${() => state.demoProcessing ? '' : 'display:none'}">
                   <div class="spinner"></div>
@@ -327,16 +331,18 @@ const App = component(() => html`
                 <div class="demo__run-prompt" style="${() => !state.demoProcessing && !state.demoHasResult ? '' : 'display:none'}">
                   <button
                     class="btn btn--primary demo__run-btn"
+                    data-testid="demo-process-button"
                     @click="${processDemo}"
                   ><span class="demo__btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg></span><span>Process</span></button>
                 </div>
                 <img
+                  data-testid="demo-output-image"
                   style="${() => state.demoHasResult ? '' : 'display:none'}"
                   src="${() => state.demoOutputUrl}"
                   alt="Processed output"
                 />
               </div>
-              <div class="demo__statusbar" style="${() => state.demoHasResult ? '' : 'display:none'}">${() => state.demoOutputInfo}</div>
+              <div class="demo__statusbar" data-testid="demo-output-info" style="${() => state.demoHasResult ? '' : 'display:none'}">${() => state.demoOutputInfo}</div>
             </div>
           </section>
 

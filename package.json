@@ -45,6 +45,7 @@
     "test:unit": "vitest run",
     "test:watch": "vitest --watch",
     "test:workers": "vitest run --config vitest.config.workers.ts",
+    "test:e2e": "playwright test",
     "release": "node scripts/release.mjs",
     "release:next": "node scripts/release.mjs --tag=next",
     "release:dev": "node scripts/release.mjs --tag=dev"
@@ -54,6 +55,7 @@
     "@jsquash/webp": "^1.5.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@arrow-js/core": "^1.0.6",
     "@arrow-js/framework": "^1.0.6",
     "@cloudflare/vite-plugin": "^1.31.0",
