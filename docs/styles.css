@@ -131,6 +131,7 @@ code, pre { font-family: var(--mono); }
 .hero__banner {
   width: min(560px, 85vw);
   margin: 0 auto 2.5rem;
+  transform: translateX(-14%);
   filter: invert(1);
   opacity: 0.9;
 }

@@ -38,6 +38,7 @@
     "docs:dev": "pnpm build:code && pnpm check:wasm-pair && vite --config docs/vite.config.mjs",
     "docs:build": "pnpm build:code && pnpm check:wasm-pair && vite build --config docs/vite.config.mjs",
     "docs:preview": "pnpm build:code && pnpm check:wasm-pair && vite preview --config docs/vite.config.mjs",
+    "docs:og": "node scripts/generate-og-image.mjs",
     "typecheck": "tsc --noEmit",
     "verify": "pnpm typecheck && pnpm build && pnpm docs:build && pnpm test:unit",
     "verify:release": "pnpm build:wasm && pnpm verify",
