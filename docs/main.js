@@ -101,12 +101,36 @@ function formatBytes(bytes) {
 }
 
 let pendingFile = null
+let demoRequestVersion = 0
+let demoAbortController = null
 
 function clearOutputUrl() {
   if (state.demoOutputUrl && state.demoOutputUrl.startsWith('blob:')) {
     URL.revokeObjectURL(state.demoOutputUrl)
   }
   state.demoOutputUrl = ''
+}
+
+function resetDemoResult() {
+  state.demoHasResult = false
+  state.demoOutputInfo = ''
+  clearOutputUrl()
+}
+
+function invalidateDemoResult() {
+  demoRequestVersion += 1
+  if (demoAbortController) {
+    demoAbortController.abort()
+    demoAbortController = null
+  }
+  state.demoProcessing = false
+  state.demoError = ''
+  resetDemoResult()
+}
+
+function updateDemoOption(key, value) {
+  state[key] = value
+  invalidateDemoResult()
 }
 
 function handleDemoFileSelect(e) {
@@ -120,10 +144,7 @@ function handleDemoFileSelect(e) {
   state.demoInputUrl = URL.createObjectURL(file)
   pendingFile = file
   state.demoInputInfo = `Selected: ${(file.type || 'unknown').replace('image/', '').toUpperCase()} — ${formatBytes(file.size)}`
-  state.demoHasResult = false
-  state.demoOutputInfo = ''
-  state.demoError = ''
-  clearOutputUrl()
+  invalidateDemoResult()
 }
 
 async function getDemoFile() {
@@ -157,8 +178,14 @@ function getDocsBaseUrl() {
 }
 
 async function processDemo() {
+  const requestVersion = ++demoRequestVersion
+  if (demoAbortController) {
+    demoAbortController.abort()
+  }
+  const abortController = new AbortController()
+  demoAbortController = abortController
   state.demoError = ''
-  state.demoHasResult = false
+  resetDemoResult()
   state.demoProcessing = true
 
   try {
@@ -174,7 +201,12 @@ async function processDemo() {
         'content-type': file.type || 'application/octet-stream',
       },
       body: file,
+      signal: abortController.signal,
     })
+
+    if (requestVersion !== demoRequestVersion) {
+      return
+    }
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Processing failed' }))
@@ -199,6 +231,10 @@ async function processDemo() {
       .map((value) => value.trim())
       .filter(Boolean)
 
+    if (requestVersion !== demoRequestVersion) {
+      return
+    }
+
     state.demoInputInfo = `Input: ${inputFormat.toUpperCase()} ${inputWidth}\u00d7${inputHeight} — ${formatBytes(inputBytes)}`
     state.demoOutputInfo = `Output: JPEG ${outputWidth}\u00d7${outputHeight} — ${formatBytes(outputBytes)} — peak SIP memory ${formatBytes(peakPipeline)}${peakCodec ? ` (codec share ${formatBytes(peakCodec)})` : ''} — ${processingMs}ms${notes.length ? ` — ${notes.join(', ')}` : ''}`
     state.demoProcessing = false
@@ -207,8 +243,19 @@ async function processDemo() {
     clearOutputUrl()
     state.demoOutputUrl = URL.createObjectURL(blob)
   } catch (err) {
+    if (requestVersion !== demoRequestVersion) {
+      return
+    }
+    if (err instanceof Error && err.name === 'AbortError') {
+      state.demoProcessing = false
+      return
+    }
     state.demoError = err instanceof Error ? err.message : 'Network error'
     state.demoProcessing = false
+  } finally {
+    if (demoAbortController === abortController) {
+      demoAbortController = null
+    }
   }
 }
 
@@ -312,7 +359,7 @@ const App = component(() => html`
                     type="number"
                     data-testid="demo-width-input"
                     value="${() => state.demoMaxWidth}"
-                    @input="${(e) => { state.demoMaxWidth = e.target.value }}"
+                    @input="${(e) => { updateDemoOption('demoMaxWidth', e.target.value) }}"
                   />
                 </div>
                 <div class="demo__field">
@@ -321,7 +368,7 @@ const App = component(() => html`
                     type="number"
                     data-testid="demo-height-input"
                     value="${() => state.demoMaxHeight}"
-                    @input="${(e) => { state.demoMaxHeight = e.target.value }}"
+                    @input="${(e) => { updateDemoOption('demoMaxHeight', e.target.value) }}"
                   />
                 </div>
                 <div class="demo__field">
@@ -332,7 +379,7 @@ const App = component(() => html`
                     value="${() => state.demoQuality}"
                     min="1"
                     max="100"
-                    @input="${(e) => { state.demoQuality = e.target.value }}"
+                    @input="${(e) => { updateDemoOption('demoQuality', e.target.value) }}"
                   />
                 </div>
               </div>

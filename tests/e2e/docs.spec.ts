@@ -48,4 +48,9 @@ test('docs demo uploads and resizes a large image', async ({ page }) => {
   expect(dimensions.naturalHeight).toBeGreaterThan(0);
   expect(dimensions.naturalWidth).toBeLessThanOrEqual(1024);
   expect(dimensions.naturalHeight).toBeLessThanOrEqual(1024);
+
+  await page.getByTestId('demo-quality-input').fill('70');
+  await expect(page.getByTestId('demo-output-image')).toBeHidden();
+  await expect(page.getByTestId('demo-output-info')).toBeHidden();
+  await expect(page.getByTestId('demo-error')).toHaveText('');
 });
