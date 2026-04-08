@@ -138,7 +138,7 @@ const stream = toReadableStream(image) // ReadableStream<Uint8Array>
   fullExample: {
     lang: 'typescript',
     code: `
-import { inspect, ready, toResponse, transform } from '@standardagents/sip'
+import { collect, inspect, ready, transform } from '@standardagents/sip'
 import sipWasm from '@standardagents/sip/dist/sip.wasm'
 
 // HTML trimmed for brevity.
@@ -171,8 +171,19 @@ export default {
       height: Number(url.searchParams.get('height')) || 1024,
       quality: Number(url.searchParams.get('quality')) || 82,
     })
+    const result = await collect(image)
 
-    return toResponse(image)
+    return new Response(result.data, {
+      headers: {
+        'Content-Type': result.info.mimeType,
+        'X-Input-Format': info.format,
+        'X-Input-Width': String(info.width),
+        'X-Input-Height': String(info.height),
+        'X-Output-Width': String(result.info.width),
+        'X-Output-Height': String(result.info.height),
+        'X-Peak-Pipeline-Bytes': String(result.stats.peakPipelineBytes),
+      },
+    })
   },
 }
 `,

@@ -636,7 +636,7 @@ const App = component(() => html`
             <h2>Example</h2>
             <p>
               A single-file Cloudflare Worker that serves an upload page and
-              streams back the resized JPEG. The deploy button uses the dedicated
+              returns the resized JPEG with metadata headers for the demo UI. The deploy button uses the dedicated
               <code>standardagents/sip-worker-example</code> template repo so it avoids
               Cloudflare's monorepo import edge cases.
             </p>

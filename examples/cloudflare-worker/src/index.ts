@@ -1,5 +1,5 @@
 import sipWasm from '../vendor/sip/sip.wasm';
-import { inspect, ready, toResponse, transform } from '../vendor/sip/index.js';
+import { collect, inspect, ready, transform } from '../vendor/sip/index.js';
 
 const HTML = `<!doctype html>
 <html lang="en">
@@ -32,7 +32,7 @@ const HTML = `<!doctype html>
 <body>
   <main>
     <h1>sip Worker Example</h1>
-    <p>This page uploads the selected JPEG or PNG as the raw request body, resizes it inside a Cloudflare Worker, and streams the JPEG back.</p>
+    <p>This page uploads the selected JPEG or PNG as the raw request body, resizes it inside a Cloudflare Worker, and returns the JPEG with measured metadata headers.</p>
     <form id="form">
       <div class="picker">
         <input id="file" type="file" accept="image/jpeg,image/png" required>
@@ -159,12 +159,21 @@ export default {
         });
       }
       const image = transform(source, getOptions(url));
-      return toResponse(image, {
+      const result = await collect(image);
+      return new Response(result.data, {
         headers: {
+          'Content-Type': result.info.mimeType,
           'Cache-Control': 'no-store',
           'X-Input-Format': info.format,
           'X-Input-Width': String(info.width),
           'X-Input-Height': String(info.height),
+          'X-Output-Width': String(result.info.width),
+          'X-Output-Height': String(result.info.height),
+          'X-Output-Bytes': String(result.stats.bytesOut),
+          'X-Peak-Pipeline-Bytes': String(result.stats.peakPipelineBytes),
+          'X-Peak-Codec-Bytes': String(result.stats.peakCodecBytes),
+          'X-Peak-Buffered-Input-Bytes': String(result.stats.peakBufferedInputBytes),
+          'X-Peak-Buffered-Output-Bytes': String(result.stats.peakBufferedOutputBytes),
         },
       });
     } catch (error) {
