@@ -141,17 +141,9 @@ const stream = toReadableStream(image) // ReadableStream<Uint8Array>
 import { inspect, ready, toResponse, transform } from '@standardagents/sip'
 import sipWasm from '@standardagents/sip/dist/sip.wasm'
 
-// Full HTML omitted here for brevity.
-// See examples/cloudflare-worker/src/index.ts for the complete Worker.
+// HTML trimmed for brevity.
+// Full deployable starter: github.com/standardagents/sip-worker-example
 const HTML = '<!doctype html>...'
-
-function getOptions(url: URL) {
-  return {
-    width: Number(url.searchParams.get('width')) || undefined,
-    height: Number(url.searchParams.get('height')) || undefined,
-    quality: Number(url.searchParams.get('quality')) || undefined,
-  }
-}
 
 export default {
   async fetch(request: Request) {
@@ -174,16 +166,13 @@ export default {
         status: 415,
       })
     }
-
-    const image = transform(source, getOptions(url))
-    return toResponse(image, {
-      headers: {
-        'Cache-Control': 'no-store',
-        'X-Input-Format': info.format,
-        'X-Input-Width': String(info.width),
-        'X-Input-Height': String(info.height),
-      },
+    const image = transform(source, {
+      width: Number(url.searchParams.get('width')) || 1024,
+      height: Number(url.searchParams.get('height')) || 1024,
+      quality: Number(url.searchParams.get('quality')) || 82,
     })
+
+    return toResponse(image)
   },
 }
 `,

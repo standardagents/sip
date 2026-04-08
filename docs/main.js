@@ -47,8 +47,8 @@ const pmLogos = {
   bun: '/logo-bun.svg',
 }
 
-const exampleRepoUrl = 'https://github.com/standardagents/sip/tree/main/examples/cloudflare-worker'
-const exampleSourceUrl = 'https://github.com/standardagents/sip/blob/main/examples/cloudflare-worker/src/index.ts'
+const exampleRepoUrl = 'https://github.com/standardagents/sip-worker-example'
+const exampleSourceUrl = 'https://github.com/standardagents/sip-worker-example/blob/main/src/index.ts'
 const exampleDeployUrl =
   'https://deploy.workers.cloudflare.com/?url=' + encodeURIComponent(exampleRepoUrl)
 
@@ -635,20 +635,18 @@ const App = component(() => html`
           <section id="example">
             <h2>Example</h2>
             <p>
-              The code block below trims the inline HTML, but the real template
-              lives in <code>examples/cloudflare-worker/</code>. It is a ready-to-deploy
-              Worker that uses the raw request-body path and streams the JPEG response back.
-              The starter intentionally stays on the low-memory JPEG and PNG path.
+              A single-file Cloudflare Worker that serves an upload page and
+              streams back the resized JPEG. The deploy button uses the dedicated
+              <code>standardagents/sip-worker-example</code> template repo so it avoids
+              Cloudflare's monorepo import edge cases.
             </p>
             <div class="example__actions">
-              <a class="btn" href="${exampleSourceUrl}" target="_blank" rel="noreferrer">View Full Worker</a>
+              <a class="btn btn--primary" href="#demo">Demo Worker</a>
+              <a class="btn" href="${exampleSourceUrl}" target="_blank" rel="noreferrer">View source</a>
               <a class="deploy-button" href="${exampleDeployUrl}" target="_blank" rel="noreferrer">
-                <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare">
+                <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare" />
               </a>
             </div>
-            <p class="example__note">
-              The template is isolated in its own subdirectory so the Cloudflare deploy button can use it directly.
-            </p>
             <div class="shiki-block" data-code="fullExample"></div>
           </section>
 
