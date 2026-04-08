@@ -255,7 +255,7 @@ const App = component(() => html`
           <span class="hero__title-accent">Processor</span>
         </h1>
         <p class="hero__sub">
-          Ultra low memory image processing for Cloudflare Workers.
+          Ultra low memory WASM image processing for Cloudflare Workers.
         </p>
         <div class="hero__actions">
           <a href="#install" class="btn btn--primary">Get started</a>
