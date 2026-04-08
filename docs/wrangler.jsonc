@@ -9,6 +9,12 @@
       "invocation_logs": true
     }
   },
+  "routes": [
+    {
+      "pattern": "sip.standardagents.ai",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "binding": "ASSETS"
   }
