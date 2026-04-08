@@ -795,7 +795,7 @@ const App = component(() => html`
               Cloudflare's monorepo import edge cases.
             </p>
             <div class="example__actions">
-              <a class="btn" href="#demo">Demo Worker</a>
+              <a class="btn" href="https://example-sip.formkit.workers.dev/" target="_blank" rel="noopener">Demo Worker</a>
               <a class="btn" href="${exampleSourceUrl}" target="_blank" rel="noreferrer">View source</a>
               <a class="deploy-button" href="${exampleDeployUrl}" target="_blank" rel="noreferrer">
                 <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare" />
