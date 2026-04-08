@@ -440,6 +440,9 @@ const App = component(() => html`
               Upload an image or use the sample below. A Cloudflare Worker will
               process your image and report back the memory used for the operation.
             </p>
+            <a class="deploy-button" href="${exampleDeployUrl}" target="_blank" rel="noreferrer">
+              <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare" />
+            </a>
             <div class="demo">
               <label class="demo__input-area">
                 <input
