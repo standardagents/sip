@@ -174,18 +174,21 @@ This downloads libjpeg-turbo, compiles it to WASM, and generates:
 
 ### Using WASM
 
-To enable streaming mode, register the WASM loader before processing:
+For Workers and bundlers, statically import the emitted `.wasm` asset and pass it
+to `ready()` once at startup:
 
 ```typescript
-import { sip } from '@standardagents/sip';
-import createSipModule from '@standardagents/sip/dist/sip.js';
+import { ready, transform, collect } from '@standardagents/sip';
+import sipWasm from '@standardagents/sip/dist/sip.wasm';
 
-// Register WASM loader (once at startup)
-globalThis.__SIP_WASM_LOADER__ = async () => createSipModule();
+await ready({ wasm: sipWasm });
 
-// Now sip.process() will use streaming for JPEG
-const result = await sip.process(jpegBuffer, { maxWidth: 2048 });
+const image = transform(request.body ?? request, { width: 2048, height: 2048 });
+const result = await collect(image);
 ```
+
+The `globalThis.__SIP_WASM_LOADER__` hook still exists as an internal escape hatch,
+but it is not the intended public setup API.
 
 ## Architecture
 

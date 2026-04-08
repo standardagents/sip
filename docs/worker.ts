@@ -1,5 +1,4 @@
 // @ts-nocheck - workerd loads generated wasm assets dynamically
-import createSipModule from '../dist/sip.js'
 import sipWasm from '../dist/sip.wasm'
 import avifDecoderWasm from '@jsquash/avif/codec/dec/avif_dec.wasm'
 import webpDecoderWasm from '@jsquash/webp/codec/dec/webp_dec.wasm'
@@ -30,30 +29,6 @@ globalThis.__SIP_CODEC_WASM__ = {
   webp: webpDecoderWasm,
 }
 
-globalThis.__SIP_WASM_LOADER__ = async () => {
-  return createSipModule({
-    instantiateWasm(
-      imports: WebAssembly.Imports,
-      receiveInstance: (instance: WebAssembly.Instance) => void
-    ) {
-      WebAssembly.instantiate(sipWasm, imports).then((instance) => {
-        receiveInstance(instance)
-      })
-      return {}
-    },
-  })
-}
-
-let boot: Promise<void> | null = null
-
-function ensureReady() {
-  if (!boot) {
-    boot = ready()
-  }
-
-  return boot
-}
-
 function getTransformOptions(url: URL) {
   return {
     width: Number(url.searchParams.get('width')) || undefined,
@@ -76,7 +51,7 @@ export default {
       )
     }
 
-    await ensureReady()
+    await ready({ wasm: sipWasm })
     return handleProcess(request, url)
   },
 } satisfies ExportedHandler<Env>

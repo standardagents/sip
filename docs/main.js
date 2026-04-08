@@ -7,6 +7,7 @@ import './styles.css'
 
 const state = reactive({
   installTool: 'pnpm',
+  installCopied: false,
   stars: '',
   demoMaxWidth: '1024',
   demoMaxHeight: '1024',
@@ -40,10 +41,23 @@ const installCommands = {
 }
 
 const pmLogos = {
-  pnpm: '<svg viewBox="0 0 24 24" fill="#f9ad00"><rect x="0" y="0" width="7" height="7"/><rect x="8.5" y="0" width="7" height="7"/><rect x="17" y="0" width="7" height="7"/><rect x="17" y="8.5" width="7" height="7"/><rect x="0" y="17" width="7" height="7"/><rect x="8.5" y="17" width="7" height="7"/><rect x="17" y="17" width="7" height="7"/><rect x="8.5" y="8.5" width="7" height="7"/></svg>',
-  npm: '<svg viewBox="0 0 24 24" fill="#cb3837"><path d="M0 0v24h24V0H0zm19.2 19.2H12V7.2H7.2v12H4.8V4.8h14.4v14.4z"/></svg>',
-  yarn: '<svg viewBox="0 0 24 24" fill="#2c8ebb"><path d="M12 0C5.375 0 0 5.375 0 12s5.375 12 12 12 12-5.375 12-12S18.625 0 12 0zm5.768 15.51c-.357.148-.624.162-.9.094-.898-.246-1.416-1.26-2.1-1.8-.06-.048-.12-.078-.18-.078-.102 0-.162.084-.222.27-.24.738-.462.87-.87 1.11-.27.156-.744.312-1.386.42-1.002.168-1.53-.18-1.764-.39-.102-.09-.108-.228-.018-.33.09-.102.228-.108.33-.018.168.15.588.414 1.392.27.564-.096.966-.228 1.176-.354.306-.18.426-.27.612-.84.09-.27.24-.714.636-.786.192-.036.378.042.546.168.576.432.984 1.314 1.704 1.518.144.036.27.036.45-.036.354-.15.582-.21.906-.276-.984-.858-1.554-1.716-1.776-2.244-.15-.36-.264-.714-.33-.93-.228-.054-.516-.168-.792-.432-.528-.504-.618-1.11-.618-1.416 0-.18.012-.306.024-.378.03-.168.066-.306.15-.546.054-.156.126-.336.186-.51.03-.09.066-.186.09-.264-.168-.324-.33-.756-.33-1.248 0-.42.186-.69.342-.81.264-.198.534-.084.72.042.12.084.234.186.336.306.228-.27.504-.492.81-.654.408-.222.75-.264 1.038-.264.048 0 .102 0 .15.006.528.03 1.02.264 1.386.648.432.456.66 1.074.66 1.746 0 .198-.018.402-.06.612.576.312.936.792 1.02 1.416.048.33-.024.69-.198 1.02-.06.114-.138.222-.228.318.048.108.084.21.084.318 0 .162-.066.306-.162.396z"/></svg>',
-  bun: '<svg viewBox="0 0 24 24" fill="#fbf0df"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM8.5 8.5c.828 0 1.5.895 1.5 2s-.672 2-1.5 2S7 11.605 7 10.5s.672-2 1.5-2zm7 0c.828 0 1.5.895 1.5 2s-.672 2-1.5 2-1.5-.895-1.5-2 .672-2 1.5-2zM7.5 15s1.5 2.5 4.5 2.5 4.5-2.5 4.5-2.5"/></svg>',
+  pnpm: '/logo-pnpm.svg',
+  npm: '/logo-npm.svg',
+  yarn: '/logo-yarn.svg',
+  bun: '/logo-bun.svg',
+}
+
+const exampleRepoUrl = 'https://github.com/standardagents/sip/tree/main/examples/cloudflare-worker'
+const exampleSourceUrl = 'https://github.com/standardagents/sip/blob/main/examples/cloudflare-worker/src/index.ts'
+const exampleDeployUrl =
+  'https://deploy.workers.cloudflare.com/?url=' + encodeURIComponent(exampleRepoUrl)
+
+function copyInstallCmd() {
+  const text = installCommands[state.installTool]
+  navigator.clipboard.writeText(text).then(() => {
+    state.installCopied = true
+    setTimeout(() => { state.installCopied = false }, 1500)
+  })
 }
 
 const stats = [
@@ -369,7 +383,7 @@ const App = component(() => html`
 
           <section id="install">
             <h2>Installation</h2>
-            <div class="install-bar" id="install-bar">
+            <div class="install-bar">
               <div class="install-tabs">
                 ${Object.keys(installCommands).map((tool) => html`
                   <button
@@ -380,13 +394,20 @@ const App = component(() => html`
                         : 'install-tab'}"
                     @click="${() => { state.installTool = tool }}"
                     title="${tool}"
-                    data-pm="${tool}"
-                  ></button>
+                  ><img src="${pmLogos[tool]}" alt="${tool}" /></button>
                 `)}
               </div>
-              <div class="install-cmd">
+              <div class="install-cmd" @click="${copyInstallCmd}">
                 <code>${() => installCommands[state.installTool]}</code>
               </div>
+              <button
+                class="install-copy"
+                title="Copy to clipboard"
+                @click="${copyInstallCmd}"
+              >
+                <svg style="${() => state.installCopied ? 'display:none' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <svg style="${() => state.installCopied ? '' : 'display:none'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
             </div>
             <p>
               sip ships as ESM with TypeScript types included. You also need the
@@ -409,8 +430,14 @@ const App = component(() => html`
               <p>
                 Loads the WASM module. Call this once when your Worker starts up
                 and cache the promise. You can pass a pre-compiled
-                <code>WebAssembly.Module</code> or raw bytes, or let it use the
-                global <code>__SIP_WASM_LOADER__</code>.
+                <code>WebAssembly.Module</code> or raw bytes. In Workers, the
+                normal pattern is a static <code>.wasm</code> import plus
+                <code>ready({ wasm: sipWasm })</code>.
+              </p>
+              <p>
+                When you pass a statically imported <code>WebAssembly.Module</code>,
+                <code>ready()</code> is already idempotent, so calling it directly
+                in your request handler is fine.
               </p>
               <div class="shiki-block" data-code="readySig"></div>
             </article>
@@ -608,9 +635,19 @@ const App = component(() => html`
           <section id="example">
             <h2>Example</h2>
             <p>
-              A single-file Cloudflare Worker that serves an upload form and
-              returns the resized image. Deploy it and you have a working
-              image resizer.
+              The code block below trims the inline HTML, but the real template
+              lives in <code>examples/cloudflare-worker/</code>. It is a ready-to-deploy
+              Worker that uses the raw request-body path and streams the JPEG response back.
+              The starter intentionally stays on the low-memory JPEG and PNG path.
+            </p>
+            <div class="example__actions">
+              <a class="btn" href="${exampleSourceUrl}" target="_blank" rel="noreferrer">View Full Worker</a>
+              <a class="deploy-button" href="${exampleDeployUrl}" target="_blank" rel="noreferrer">
+                <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare">
+              </a>
+            </div>
+            <p class="example__note">
+              The template is isolated in its own subdirectory so the Cloudflare deploy button can use it directly.
             </p>
             <div class="shiki-block" data-code="fullExample"></div>
           </section>
@@ -661,8 +698,4 @@ render(root, App())
 
 requestAnimationFrame(() => {
   injectHighlightedCode()
-  for (const [pm, svg] of Object.entries(pmLogos)) {
-    const btn = document.querySelector(`[data-pm="${pm}"]`)
-    if (btn) btn.innerHTML = svg
-  }
 })

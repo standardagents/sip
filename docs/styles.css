@@ -445,6 +445,30 @@ code, pre { font-family: var(--mono); }
   tab-size: 2;
 }
 
+.example__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.deploy-button {
+  display: inline-flex;
+  align-items: center;
+}
+
+.deploy-button img {
+  display: block;
+  height: 40px;
+  width: auto;
+}
+
+.example__note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 /* --- Install --- */
 
 .install-bar {
@@ -453,18 +477,18 @@ code, pre { font-family: var(--mono); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  height: 48px;
+  height: 44px;
   margin-bottom: 1rem;
+  background: var(--surface);
 }
 
 .install-tabs {
   display: flex;
   align-items: center;
-  gap: 0;
-  border-right: 1px solid var(--border);
-  background: var(--surface);
   height: 100%;
   flex-shrink: 0;
+  padding: 0 0.25rem;
+  gap: 2px;
 }
 
 .install-tab {
@@ -472,33 +496,68 @@ code, pre { font-family: var(--mono); }
   border: none;
   background: transparent;
   cursor: pointer;
-  height: 100%;
-  width: 44px;
+  height: 30px;
+  width: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid var(--border);
+  border-radius: 6px;
   transition: all 0.12s;
   opacity: 0.35;
+  padding: 0;
 }
-.install-tab:last-child { border-right: none; }
 .install-tab:hover { opacity: 0.7; background: var(--surface-hover); }
 .install-tab--active { opacity: 1; background: var(--accent-dim); }
 
-.install-tab svg {
-  width: 20px;
-  height: 20px;
+.install-tab img {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .install-cmd {
   flex: 1;
   display: flex;
   align-items: center;
-  padding: 0 1.25rem;
+  padding: 0 0.85rem;
   font-family: var(--mono);
-  font-size: 0.88rem;
-  color: var(--text);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
   height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.install-cmd code {
+  white-space: nowrap;
+  color: var(--text-secondary);
+  background: none;
+  padding: 0;
+}
+
+.install-copy {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  height: 100%;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: color 0.12s;
+  flex-shrink: 0;
+}
+
+.install-copy:hover {
+  color: var(--text);
+}
+
+.install-copy svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* --- API entries --- */
@@ -856,8 +915,8 @@ code, pre { font-family: var(--mono); }
   }
 
   .install-bar { height: auto; flex-wrap: wrap; }
-  .install-tabs { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
-  .install-cmd { padding: 0.75rem 1rem; width: 100%; }
+  .install-tabs { border-bottom: 1px solid var(--border); }
+  .install-cmd { padding: 0.75rem 0.85rem; flex: 1; }
 
   .format-grid__header,
   .format-row {

@@ -12,11 +12,12 @@ request.body -> inspect() -> transform -> Response
     lang: 'typescript',
     code: `
 import { ready } from '@standardagents/sip'
+import sipWasm from '@standardagents/sip/dist/sip.wasm'
 
-// Auto-detect WASM loader (uses globalThis.__SIP_WASM_LOADER__)
-await ready()
+// Preferred in Workers and bundlers that can import the .wasm asset
+await ready({ wasm: sipWasm })
 
-// Or pass a pre-compiled WebAssembly.Module
+// Or pass a pre-compiled WebAssembly.Module explicitly
 await ready({ wasm: compiledModule })
 
 // Or pass raw WASM bytes
@@ -137,62 +138,50 @@ const stream = toReadableStream(image) // ReadableStream<Uint8Array>
   fullExample: {
     lang: 'typescript',
     code: `
-import { collect, inspect, ready, toResponse, transform } from '@standardagents/sip'
-import createSipModule from '@standardagents/sip/dist/sip.js'
+import { inspect, ready, toResponse, transform } from '@standardagents/sip'
 import sipWasm from '@standardagents/sip/dist/sip.wasm'
 
-globalThis.__SIP_WASM_LOADER__ = async () =>
-  createSipModule({
-    instantiateWasm(imports, receiveInstance) {
-      WebAssembly.instantiate(sipWasm, imports).then((instance) => {
-        receiveInstance(instance)
-      })
-      return {}
-    },
-  })
+// Full HTML omitted here for brevity.
+// See examples/cloudflare-worker/src/index.ts for the complete Worker.
+const HTML = '<!doctype html>...'
 
-let boot: Promise<void> | undefined
-
-const HTML = \`<!doctype html>
-<html><head><meta charset="utf-8"><title>sip demo</title>
-<style>
-  body { font-family: system-ui; max-width: 600px; margin: 2rem auto; }
-  img { max-width: 100%; margin-top: 1rem; }
-  input, button { margin-top: 1rem; }
-</style></head><body>
-<h1>sip image resizer</h1>
-<form method="post" enctype="multipart/form-data">
-  <input type="file" name="image" accept="image/*" required>
-  <button type="submit">Resize</button>
-</form>
-</body></html>\`
+function getOptions(url: URL) {
+  return {
+    width: Number(url.searchParams.get('width')) || undefined,
+    height: Number(url.searchParams.get('height')) || undefined,
+    quality: Number(url.searchParams.get('quality')) || undefined,
+  }
+}
 
 export default {
   async fetch(request: Request) {
-    boot ??= ready()
-    await boot
+    const url = new URL(request.url)
+    await ready({ wasm: sipWasm })
 
-    if (request.method === 'GET') {
+    if (request.method === 'GET' && url.pathname === '/') {
       return new Response(HTML, {
-        headers: { 'Content-Type': 'text/html' },
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
       })
     }
 
-    const form = await request.formData()
-    const file = form.get('image')
-    if (!file || !(file instanceof File)) {
-      return new Response('No image uploaded', { status: 400 })
+    if (request.method !== 'POST' || url.pathname !== '/api/process') {
+      return new Response('Not found', { status: 404 })
     }
 
-    const { info } = await inspect(file)
-    const image = transform(file, { width: 1024, height: 1024, quality: 82 })
-    const result = await collect(image)
+    const { info, source } = await inspect(request)
+    if (info.format !== 'jpeg' && info.format !== 'png') {
+      return new Response('This example worker accepts JPEG and PNG inputs only.', {
+        status: 415,
+      })
+    }
 
-    return new Response(result.data, {
+    const image = transform(source, getOptions(url))
+    return toResponse(image, {
       headers: {
-        'Content-Type': 'image/jpeg',
-        'X-Original': \`\${info.format} \${info.width}x\${info.height}\`,
-        'X-Output': \`jpeg \${result.info.width}x\${result.info.height}\`,
+        'Cache-Control': 'no-store',
+        'X-Input-Format': info.format,
+        'X-Input-Width': String(info.width),
+        'X-Input-Height': String(info.height),
       },
     })
   },
