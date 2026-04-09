@@ -392,11 +392,11 @@ const SignupCallout = component(() => {
         <p class="sa-callout-desc">
           From the team behind
           <a href="https://formkit.com" target="_blank" rel="noopener">FormKit</a>,
-          <a href="https://tempo.formkit.com" target="_blank" rel="noopener">Tempo</a>,
-          <a href="https://auto-animate.formkit.com" target="_blank" rel="noopener">AutoAnimate</a>,
           <a href="https://arrow-js.com" target="_blank" rel="noopener">ArrowJS</a>,
+          <a href="https://dmux.ai" target="_blank" rel="noopener">dmux</a>,
+          <a href="https://tempo.formkit.com" target="_blank" rel="noopener">Tempo</a>,
           and
-          <a href="https://dmux.ai" target="_blank" rel="noopener">dmux</a>
+          <a href="https://auto-animate.formkit.com" target="_blank" rel="noopener">AutoAnimate</a>
           &mdash; Standard Agents is an open standard for creating
           domain-specific agents you can distribute and compose together to form
           safe, efficient, and effective agents. Join the early access list.
