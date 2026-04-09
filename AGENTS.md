@@ -34,10 +34,10 @@ Input (any format) → Decode (scanline) → Resize (2-row buffer) → Encode (s
 
 ```
 src/
-├── index.ts              # Exports: sip, probe, initStreaming
+├── index.ts              # Exports the public stream-first API
+├── api.ts                # Main decode/resize/encode API surface
+├── input.ts              # Byte input normalization + inspect()
 ├── probe.ts              # Format detection from magic bytes (no decode)
-├── pipeline.ts           # Main sip.process() orchestration
-├── streaming.ts          # WASM streaming processors
 ├── resize.ts             # Bilinear interpolation (2-row buffer)
 ├── encoder.ts            # WASM JPEG encoder wrapper
 ├── types.ts              # Shared types
@@ -176,30 +176,32 @@ pnpm build:wasm
 
 ## Key APIs
 
-### probe(data)
+### ready(options?)
 ```typescript
-const info = probe(imageBuffer);
-// { format: 'jpeg'|'png'|'webp'|'avif'|'unknown', width, height, hasAlpha }
+await ready();
+// or: await ready({ wasm: compiledModule });
 ```
-Reads magic bytes + dimensions from header. No full decode. Fast.
+Loads the WASM module. Call once per isolate and cache the promise.
 
-### sip.process(data, options)
+### inspect(input)
 ```typescript
-const result = await sip.process(imageBuffer, {
-  maxWidth: 2048,      // Max output width
-  maxHeight: 2048,     // Max output height
-  maxBytes: 1572864,   // 1.5MB target (retries with lower quality)
-  quality: 85,         // JPEG quality 1-100
+const { info, source } = await inspect(request);
+// info: { format, width, height, hasAlpha }
+```
+Reads headers without decoding the full image and returns a reusable source.
+
+### transform(input, options) + collect(image)
+```typescript
+const image = transform(source, {
+  width: 2048,
+  height: 2048,
+  quality: 85,
 });
-// { data: ArrayBuffer, width, height, mimeType: 'image/jpeg', originalFormat }
-```
 
-### initStreaming()
-```typescript
-const available = await initStreaming();
-// true if WASM loaded successfully
+const result = await collect(image);
+// { data: ArrayBuffer, info, stats }
 ```
-Call early to warm up WASM. Not required but reduces first-call latency.
+This is the main high-level flow for resize + JPEG encode.
 
 ## Memory Model
 
