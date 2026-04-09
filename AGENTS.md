@@ -77,7 +77,8 @@ docs-dist/                # Generated static site output (gitignored)
 
 ## Docs Site
 
-This repo ships a simple static docs site built with Arrow and Vite.
+This repo ships a static docs site built with Arrow and Vite, plus a markdown
+mirror for LLMs.
 
 ```bash
 pnpm docs:dev
@@ -88,6 +89,18 @@ pnpm docs:preview
 Use it for package-level docs and examples only. Keep it static, client-only, and
 independent from the library build. The build output goes to `docs-dist/` and
 should not be committed.
+
+### Documentation lives in TWO places — keep them in sync
+
+Whenever you change the API surface, examples, options, or any user-facing
+docs content, you MUST update **both**:
+
+1. `docs/main.js` — the interactive Arrow site at <https://sip.standardagents.ai>
+2. `docs/public/llms.md` — the LLM-friendly markdown mirror served at `/llms.md`
+
+The "Markdown docs" button in the hero links to `/llms.md`, so users (and LLMs)
+will see whatever is in that file. If the two drift, agents will get stale or
+contradicting information. Always update both in the same commit.
 
 ## Release Automation
 
