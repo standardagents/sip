@@ -23,6 +23,11 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./workerd": {
+      "types": "./dist/workerd.d.ts",
+      "import": "./dist/workerd.js",
+      "default": "./dist/workerd.js"
+    },
     "./dist/sip.wasm": "./dist/sip.wasm"
   },
   "files": [

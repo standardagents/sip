@@ -74,9 +74,12 @@ async function initCodecForNode(
   initFn: (module: WebAssembly.Module) => Promise<any>,
   wasmPath: string
 ): Promise<void> {
-  // Dynamic import for Node.js modules
-  const { readFile } = await import('fs/promises');
-  const { createRequire } = await import('module');
+  // Dynamic module names prevent esbuild/wrangler from resolving these
+  // at bundle time. Only Node.js reaches this function at runtime.
+  const fsModule = 'fs/promises';
+  const moduleModule = 'module';
+  const { readFile } = await import(/* @vite-ignore */ fsModule);
+  const { createRequire } = await import(/* @vite-ignore */ moduleModule);
   const require = createRequire(import.meta.url);
 
   // Resolve the WASM file path from the package
