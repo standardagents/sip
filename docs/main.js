@@ -925,7 +925,7 @@ const App = component(() => html`
         <div class="footer__inner">
           <div class="footer__credits">
             <a
-              href="https://standardagentbuilder.com"
+              href="https://standardagents.ai"
               target="_blank"
               rel="noopener"
               class="footer__credit"
