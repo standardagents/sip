@@ -37,8 +37,16 @@ async function initCodecWithBinary(initFn, wasmSource) {
   await initFn(wasmModule2);
 }
 async function initCodecForNode(initFn, wasmPath) {
-  const { readFile } = await import('fs/promises');
-  const { createRequire } = await import('module');
+  const fsModule = "fs/promises";
+  const moduleModule = "module";
+  const { readFile } = await import(
+    /* @vite-ignore */
+    fsModule
+  );
+  const { createRequire } = await import(
+    /* @vite-ignore */
+    moduleModule
+  );
   const require2 = createRequire(import.meta.url);
   const resolvedPath = require2.resolve(wasmPath);
   const wasmBuffer = await readFile(resolvedPath);
@@ -726,7 +734,11 @@ async function doLoadWasm() {
     }
     const isNode2 = !isCloudflareWorker2() && typeof process !== "undefined" && process.versions != null && process.versions.node != null;
     if (isNode2) {
-      const { readFile } = await import('fs/promises');
+      const fsModule = "fs/promises";
+      const { readFile } = await import(
+        /* @vite-ignore */
+        fsModule
+      );
       const wasmBinary = await readFile(new URL("./sip.wasm", import.meta.url));
       const module2 = await createSipModule({ wasmBinary });
       return module2;

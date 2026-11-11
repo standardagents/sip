@@ -150,7 +150,10 @@ async function doLoadWasm(): Promise<SipWasmModule> {
       process.versions.node != null;
 
     if (isNode) {
-      const { readFile } = await import('fs/promises');
+      // Dynamic module name prevents esbuild/wrangler from resolving this
+      // at bundle time. Only Node.js reaches this branch at runtime.
+      const fsModule = 'fs/promises';
+      const { readFile } = await import(/* @vite-ignore */ fsModule);
       const wasmBinary = await readFile(new URL('./sip.wasm', import.meta.url));
       const module = await createSipModule({ wasmBinary });
       return module as SipWasmModule;
